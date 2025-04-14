@@ -1,0 +1,16 @@
+# ninja log v6
+12	154	7663489754214521	CMakeFiles/Final_Project.dir/main.c.obj	81b4a1b71c95835
+168	357	7663486456186062	Final_Project.exe	20deb8ba7761a135
+5	153	7663489872827854	CMakeFiles/Final_Project.dir/generate_sequence.c.obj	e62c0863b1a957cc
+23	220	7663489081900457	CMakeFiles/Final_Project.dir/generate_sequence/generate_sequence.c.obj	dc4919d9595d9915
+3	385	7663491753728123	build.ninja	bccdc2415e41432b
+16	186	7663491909292781	CMakeFiles/Final_Project.dir/generate_sequence.c.obj	e62c0863b1a957cc
+5	190	7663491909190540	CMakeFiles/Final_Project.dir/main.c.obj	81b4a1b71c95835
+6	206	7663493291263574	CMakeFiles/Final_Project.dir/main.c.obj	81b4a1b71c95835
+18	210	7663493291397019	CMakeFiles/Final_Project.dir/generate_sequence.c.obj	e62c0863b1a957cc
+210	381	7663493293306313	Final_Project.exe	20deb8ba7761a135
+5	130	7663493453003567	CMakeFiles/Final_Project.dir/main.c.obj	81b4a1b71c95835
+16	145	7663493453115073	CMakeFiles/Final_Project.dir/generate_sequence.c.obj	e62c0863b1a957cc
+16	163	7663493873779603	CMakeFiles/Final_Project.dir/generate_sequence.c.obj	e62c0863b1a957cc
+6	166	7663493873676927	CMakeFiles/Final_Project.dir/main.c.obj	81b4a1b71c95835
+166	331	7663493875277718	Final_Project.exe	20deb8ba7761a135
