@@ -6,4 +6,6 @@ set(CMAKE_C_STANDARD 11)
 add_executable(Final_Project main.c
         generate_sequence.c
         generate_sequence.h
+        operations.c
+        operations.h
 )

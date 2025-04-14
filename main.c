@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "generate_sequence.h"
+#include "operations.h"
 
 int main() {
     const unsigned char* seq = get_lfsr_sequence();
@@ -7,9 +8,5 @@ int main() {
         printf("%d, ", seq[i]);
     }
     printf("\n");
-
-    printf("andrew change 1\n");
-
-    printf("eli change 1");
     return 0;
 }
