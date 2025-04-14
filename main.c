@@ -7,5 +7,7 @@ int main() {
         printf("%d, ", seq[i]);
     }
     printf("\n");
+
+    printf("andrew change 1");
     return 0;
 }
