@@ -6,7 +6,7 @@
 #define OPERATIONS_H
 
 // Complex number structure
-struct complex {
+struct complex{
     double real;
     double imag;
 };
