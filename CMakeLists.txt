@@ -8,4 +8,8 @@ add_executable(Final_Project main.c
         generate_sequence.h
         operations.c
         operations.h
+        IFFT.c
+        IFFT.h
+        FFT.c
+        FFT.h
 )
