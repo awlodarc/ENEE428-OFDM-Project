@@ -29,4 +29,6 @@ int main() {
 
     //bpsk modulation api
     struct complex* modulated = bpsk(seq);
+
+    return 0;
 }
