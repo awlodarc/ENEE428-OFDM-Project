@@ -8,4 +8,6 @@ add_executable(Final_Project main.c
         generate_sequence.h
         operations.c
         operations.h
+        symbol_modulation.c
+        symbol_modulation.h
 )
