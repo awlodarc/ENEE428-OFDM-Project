@@ -12,4 +12,6 @@ add_executable(Final_Project main.c
         IFFT.h
         FFT.c
         FFT.h
+        symbol_modulation.c
+        symbol_modulation.h
 )
