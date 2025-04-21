@@ -2,6 +2,7 @@
 #include "generate_sequence.h"
 #include "operations.h"
 #include "symbol_modulation.h"
+#include "subcarrier_mapping.h"
 #include "FFT.h"
 #include "IFFT.h"
 
@@ -50,14 +51,23 @@ int main() {
         printf("real: %f imag: %f\n", ifft_time_samples[p].real, ifft_time_samples[p].imag);
     }
 
-
     //OFDM generation
     const unsigned char* seq = get_lfsr_sequence();
-    for (int i = 0; i < out_length; i++) {
-        printf("%d, ", seq[i]);
-    }
-        //bpsk modulation api
-        struct complex* modulated = bpsk(seq);
 
-        return 0;
+    //bpsk modulation api
+    struct complex* modulated = bpsk(seq);
+    for (int i = 0; i < 52; i++) {
+        printf("%f, ", modulated[i].real);
+    }
+    printf("\n");
+
+    //sub carrier mapping
+    struct complex* mapped = sub_map(modulated);
+
+    for (int i = 0; i < 64; i++) {
+        printf("index: %d, value: %f, \n", i, mapped[i].real);
+    }
+    printf("\n");
+
+    return 0;
 }

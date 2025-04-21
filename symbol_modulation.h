@@ -5,6 +5,8 @@
 #ifndef SYMBOL_MODULATION_H
 #define SYMBOL_MODULATION_H
 
+#include "operations.h"
+
 #define bpsk_length 52
 #define qpsk_length 104
 #define sixteenqam_length 208
