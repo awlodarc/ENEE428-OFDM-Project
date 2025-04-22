@@ -16,4 +16,6 @@ add_executable(Final_Project main.c
         symbol_modulation.h
         Add_CP.c
         Add_CP.h
+        subcarrier_mapping.c
+        subcarrier_mapping.h
 )
