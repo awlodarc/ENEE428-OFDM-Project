@@ -3,7 +3,6 @@
 //
 
 #include "FFT.h"
-
 #include "operations.h"
 #include <math.h>
 
