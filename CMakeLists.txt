@@ -14,4 +14,6 @@ add_executable(Final_Project main.c
         FFT.h
         symbol_modulation.c
         symbol_modulation.h
+        Add_CP.c
+        Add_CP.h
 )
