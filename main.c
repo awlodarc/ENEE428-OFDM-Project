@@ -56,27 +56,29 @@ int main() {
     for (int i = 0; i < out_length; i++) {
         //printf("%d, ", seq[i]);
 
-    //bpsk modulation api
-    struct complex* modulated = bpsk(seq);
-    for (int i = 0; i < 52; i++) {
-        printf("%f, ", modulated[i].real);
+        //bpsk modulation api
+        struct complex* modulated = bpsk(seq);
+        for (int i = 0; i < 52; i++) {
+            printf("%f, ", modulated[i].real);
+        }
+        printf("\n");
+
+        //sub carrier mapping
+        struct complex* mapped = sub_map(modulated);
+
+        for (int i = 0; i < 64; i++) {
+            printf("index: %d, value: %f, \n", i, mapped[i].real);
+        }
+        printf("\n");
+
+
+        //Add CP stuff
+        Add_CP(TX_Symbol, fft_time_samples);
+
+        for (int i = 0; i < FFT_SIZE + CP_LENGTH; i++) {
+            printf("TX_Symbol[%d] = (%f, %f)\n", i, TX_Symbol[i].real, TX_Symbol[i].imag);
+        }
+
+        return 0;
     }
-    printf("\n");
-
-    //sub carrier mapping
-    struct complex* mapped = sub_map(modulated);
-
-    for (int i = 0; i < 64; i++) {
-        printf("index: %d, value: %f, \n", i, mapped[i].real);
-    }
-      
-    printf("\n");
-
-    Add_CP(TX_Symbol, fft_time_samples);
-
-    for (int i = 0; i < FFT_SIZE + CP_LENGTH; i++) {
-        printf("TX_Symbol[%d] = (%f, %f)\n", i, TX_Symbol[i].real, TX_Symbol[i].imag);
-    }
-
-    return 0;
 }
