@@ -8,7 +8,7 @@
 #include "operations.h"
 
 #define pi 3.14159265358979323846
-#define FFT_SIZE 8
+#define FFT_SIZE 64
 #define LOG_FFT_SIZE 3
 
 void revOrder();
