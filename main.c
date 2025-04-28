@@ -6,6 +6,7 @@
 #include "FFT.h"
 #include "IFFT.h"
 #include "Add_CP.h"
+#include "signal_power_estimation.h"
 
 int main() {
     struct complex fft_freq_samples[FFT_SIZE];
@@ -16,8 +17,8 @@ int main() {
         fft_time_samples[i].imag = 0;
     }
     struct complex TX_Symbol[FFT_SIZE + CP_LENGTH];
-  
-  
+
+
     //training sub-carriers
     struct complex training[52] = {{1, 0}, {1, 0}, {-1, 0}, {-1, 0},
                                 {1, 0}, {1, 0}, {-1, 0}, {1, 0},
@@ -43,13 +44,13 @@ int main() {
 
     ifft(ifft_time_samples, fft_freq_samples);
 
-    // for (int p = 0; p <= FFT_SIZE - 1; p++) {
-    //     printf("real: %f imag: %f\n", fft_freq_samples[p].real, fft_freq_samples[p].imag);
-    // }
+    for (int p = 0; p <= FFT_SIZE - 1; p++) {
+        printf("real: %f imag: %f\n", fft_freq_samples[p].real, fft_freq_samples[p].imag);
+    }
 
-    // for (int p = 0; p <= FFT_SIZE - 1; p++) {
-    //     printf("real: %f imag: %f\n", ifft_time_samples[p].real, ifft_time_samples[p].imag);
-    // }
+    for (int p = 0; p <= FFT_SIZE - 1; p++) {
+        printf("real: %f imag: %f\n", ifft_time_samples[p].real, ifft_time_samples[p].imag);
+    }
 
     //OFDM generation
     const unsigned char* seq = get_lfsr_sequence();
@@ -78,7 +79,18 @@ int main() {
         for (int i = 0; i < FFT_SIZE + CP_LENGTH; i++) {
             printf("TX_Symbol[%d] = (%f, %f)\n", i, TX_Symbol[i].real, TX_Symbol[i].imag);
         }
-
-        return 0;
     }
+
+    struct complex r_true[FFT_SIZE] = {
+        {1.5, 1.5}, {2.0, 2.0}, {2.5, 2.5}, /* rest 0 or doesn't matter */
+    };
+
+    bool detection = false;
+
+    detection = avg_power(r_true);
+
+
+   return 0;
 }
+
+
