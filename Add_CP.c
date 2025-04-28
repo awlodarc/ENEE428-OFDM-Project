@@ -15,5 +15,4 @@ void Add_CP(struct complex* output, struct complex* input) {
         output[i + CP_LENGTH] = input[i];
     }
 
-
 }
