@@ -30,5 +30,6 @@ add_executable(Final_Project main.c
         bit_detection.h
         subcarrier_demapping.c
         subcarrier_demapping.h
-
+        Remove_CP.c
+        Remove_CP.h
 )

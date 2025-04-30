@@ -7,6 +7,6 @@
 
 #include "operations.h"
 
-void Remove_CP(struct complex* output, struct complex* input);
+void Remove_CP(struct complex* output, struct complex* input, int input_len);
 
 #endif //REMOVE_CP_H
