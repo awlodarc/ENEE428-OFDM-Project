@@ -17,4 +17,11 @@ void bit_detection(struct complex* input, int output[], int mod_type) {
         }
     }
 
+    if (mod_type == 2) {
+        for (int i = 0; i < 52; i++) {
+            if (input[i].real > 0) {
+
+            }
+        }
+    }
 }
