@@ -6,121 +6,142 @@
 #include "FFT.h"
 #include "IFFT.h"
 #include "Add_CP.h"
-#include "subcarrier_demapping.h"
-#include "channel_estimator.h"
+
+struct complex ifft_time_samples[FFT_SIZE];
+struct complex training_one_time_samples[FFT_SIZE];
+struct complex training_one_freq_samples[FFT_SIZE];
+struct complex training_two_time_samples[FFT_SIZE];
 
 int main() {
-    // struct complex fft_freq_samples[FFT_SIZE];
-    // struct complex ifft_time_samples[FFT_SIZE];
-    // struct complex fft_time_samples[FFT_SIZE];
-    // for (int i = 0; i < FFT_SIZE; i++) {
-    //     fft_time_samples[i].real = i;
-    //     fft_time_samples[i].imag = 0;
-    // }
-    // struct complex TX_Symbol[FFT_SIZE + CP_LENGTH];
-    //
-    //
-    // //training sub-carriers
-    // struct complex training[52] = {{1, 0}, {1, 0}, {-1, 0}, {-1, 0},
-    //                             {1, 0}, {1, 0}, {-1, 0}, {1, 0},
-    //                             {-1, 0}, {1, 0}, {1, 0}, {1, 0},
-    //                             {1, 0}, {1, 0}, {1, 0}, {-1, 0},
-    //                             {-1, 0}, {1, 0}, {1, 0}, {-1, 0},
-    //                             {1, 0}, {-1, 0}, {1, 0}, {1, 0},
-    //                             {1, 0}, {1, 0}, {1, 0}, {-1, 0},
-    //                             {-1, 0}, {1, 0}, {1, 0}, {-1, 0},
-    //                             {1, 0}, {-1, 0}, {1, 0}, {-1, 0},
-    //                             {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0},
-    //                             {1, 0}, {1, 0}, {-1, 0}, {-1, 0},
-    //                             {1, 0}, {-1, 0}, {1, 0}, {-1, 0},
-    //                             {1, 0}, {1, 0}, {1, 0}, {1, 0}
-    // };
-    //
-    //
-    // revOrder();
-    //
-    // twiddleFactorsFFT();
-    //
-    // fft(fft_freq_samples, fft_time_samples);
-    //
-    // ifft(ifft_time_samples, fft_freq_samples);
-    //
-    // for (int p = 0; p <= FFT_SIZE - 1; p++) {
-    //     printf("real: %f imag: %f\n", fft_freq_samples[p].real, fft_freq_samples[p].imag);
-    // }
-    //
-    // for (int p = 0; p <= FFT_SIZE - 1; p++) {
-    //     printf("real: %f imag: %f\n", ifft_time_samples[p].real, ifft_time_samples[p].imag);
-    // }
-    //
-    // //OFDM generation
-    // const unsigned char* seq = get_lfsr_sequence();
-    // for (int i = 0; i < out_length; i++) {
-    //     //printf("%d, ", seq[i]);
-    //
-    //     //bpsk modulation api
-    //     struct complex* modulated = bpsk(seq);
-    //     for (int i = 0; i < 52; i++) {
-    //         printf("%f, ", modulated[i].real);
-    //     }
-    //     printf("\n");
-    //
-    //     //sub carrier mapping
-    //     struct complex* mapped = sub_map(modulated);
-    //
-    //     for (int i = 0; i < 64; i++) {
-    //         printf("index: %d, value: %f, \n", i, mapped[i].real);
-    //     }
-    //     printf("\n");
-    //
-    //
-    //     //Add CP stuff
-    //     Add_CP(TX_Symbol, fft_time_samples);
-    //
-    //     for (int i = 0; i < FFT_SIZE + CP_LENGTH; i++) {
-    //         printf("TX_Symbol[%d] = (%f, %f)\n", i, TX_Symbol[i].real, TX_Symbol[i].imag);
-    //     }
-    // }
-    //
-    // struct complex r_true[FFT_SIZE] = {
-    //     {1.5, 1.5}, {2.0, 2.0}, {2.5, 2.5}, /* rest 0 or doesn't matter */
-    // };
-    //
-    // bool detection = false;
-    //
-    // detection = signal_detected(r_true);
+    revOrder();
+    twiddleFactorsFFT();
 
-    struct complex temp1[52];
-    struct complex temp2[52];
-    for (int i = 0; i < 52; i++) {
-        temp1[i].real = i;
-        temp1[i].imag = 0;
-        temp2[i].real = i+1;
-        temp2[i].imag = 0;
+    //training sub-carriers
+    struct complex training[52] = {{1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}};
+
+    // S/P for training
+    struct complex* mapped_training_one = sub_map(training);
+    struct complex* mapped_training_two = sub_map(training);
+
+    //ifft for training
+    ifft(training_one_time_samples, mapped_training_one);
+    ifft(training_two_time_samples, mapped_training_two);
+
+    //flatten training
+    struct complex flat_training[128];
+    for (int i = 0; i < 64; i++) {
+        flat_training[i] = training_one_time_samples[i];         // Copy first array
+        flat_training[i + 64] = training_two_time_samples[i];    // Copy second array, offset by 64
     }
 
-    struct complex H1[52];
-    struct complex H2[52];
-    struct complex H_est[52];
+    //Add CP training
+    const int training_length = sizeof(flat_training) / sizeof(flat_training[0]);
 
-    for (int i = 0; i < 52; i++) {
-        H1[i] = cmultiply(temp1[i], temp1[i]);
-        H2[i] = cmultiply(temp2[i], temp2[i]);
+    const int num_blocks = training_length / BLOCK_SIZE;
+    const int final_train_length = num_blocks * BLOCK_WITH_CP;
 
-        //printf("%f, ", H1[i].real);
-        printf("%f, ", H2[i].real);
+    struct complex final_training[final_train_length];
 
-    }
+    Add_CP(final_training, flat_training, training_length);
 
-    estimation(H1, H2, H_est);
-    printf("\n\n");
+    // for (int i = 0; i < final_train_length; i++) {
+    //     printf("training final[%d] = (%f, %f)\n", i, final_training[i].real, final_training[i].imag);
+    // }
 
-    for (int i = 0; i < 52; i++) {
-        printf("%f, ", H_est[i].real);
+    //OFDM generation
+    const unsigned char* seq = get_lfsr_sequence();
+
+    // for (int i = 0; i < 52; i++) {
+    //     printf("%d, ", seq[i]);
+    // }
+    // printf("\n");
+
+    //bpsk modulation api
+    struct complex* modulated = bpsk(seq);
+    // for (int i = 298; i < 350; i++) {
+    //     printf("%f, ", modulated[i].real);
+    // }
+    // printf("\n");
+
+    // S/P
+    #define sub_size 52
+    #define num_symb (out_length / sub_size + (out_length % sub_size != 0))
+
+    struct complex symbols[num_symb][sub_size] = {0};
+
+    for (int i = 0; i < num_symb; i++) {
+        for (int j = 0; j < sub_size; j++) {
+            int index = i * sub_size + j;
+            if (index < out_length) {
+                symbols[i][j] = modulated[index];
+            } else {
+                symbols[i][j].real = 0;
+                symbols[i][j].imag = 0;
+            }
+        }
     }
 
 
-   return 0;
+    // for (int j = 36; j < sub_size; j++) {
+    //     printf("%f, ", symbols[0][j].real);
+    // }
+
+
+    //sub carrier mapping
+    struct complex mapped_symb[num_symb][64] = {0};
+
+    for (int i = 0; i < num_symb; i++) {
+        struct complex* mapped = sub_map(symbols[i]);  // Pass 52 elements
+        for (int j = 0; j < 64; j++) {
+            mapped_symb[i][j] = mapped[j];
+        }
+    }
+    for (int j = 0; j < 64; j++) {
+        printf("%f, ", mapped_symb[0][j].real);
+    }
+
+    printf("break\n");
+
+    //ifft
+    struct complex ifft_chunks[num_symb][64] = {0};
+
+    for (int i = 0; i < num_symb; i++) {
+        ifft(ifft_time_samples, mapped_symb[i]);
+        for (int j = 0; j < 64; j++) {
+            ifft_chunks[i][j] = ifft_time_samples[j];
+        }
+    }
+
+    // P/S
+    struct complex flattened[num_symb * 64];
+
+    for (int i = 0; i < num_symb; i++) {
+        for (int j = 0; j < 64; j++) {
+            flattened[i * 64 + j] = ifft_chunks[i][j];
+        }
+    }
+
+    //Add CP stuff
+    const int symbols_length = sizeof(flattened) / sizeof(flattened[0]);
+
+    const int symbols_num_blocks = symbols_length / BLOCK_SIZE;
+    const int final_symbols_length = symbols_num_blocks * BLOCK_WITH_CP;
+
+    struct complex final_symbols[final_symbols_length];
+
+    Add_CP(final_symbols, flattened, final_symbols_length);
+
+    //combine training and OFDM symbols
+    struct complex final_TX[final_train_length + final_symbols_length];
+    for (int i = 0; i < final_train_length; i++) {
+        final_TX[i] = final_training[i];
+    }
+    for (int i = final_train_length; i < final_symbols_length; i++) {
+        final_TX[i] = final_symbols[i];
+    }
+
+    // for (int i = 0; i < final_train_length + final_symbols_length; i++) {
+    //     printf("real %f, imag %f \n", final_TX[i].real, final_TX[i].imag);
+    // }
+    return 0;
 }
-
-
