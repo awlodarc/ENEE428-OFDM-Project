@@ -23,10 +23,10 @@ unsigned int swap_bits(unsigned int num){
 
 const unsigned char* get_lfsr_sequence() {
     unsigned int h = 0b0001001;
-    unsigned int init_state = 0b1000000;
+    const unsigned int init_state = 0b0001001;
     unsigned int new_h = swap_bits(h);
     unsigned int state = swap_bits(init_state);
-    unsigned char anded;
+    unsigned int anded;
     int i, m;
     for (i = 0; i < out_length; i++) {
         anded = new_h & state;
