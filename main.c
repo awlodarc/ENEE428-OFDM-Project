@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+
 #include "generate_sequence.h"
 #include "operations.h"
 #include "symbol_modulation.h"
@@ -6,7 +8,9 @@
 #include "FFT.h"
 #include "IFFT.h"
 #include "Add_CP.h"
+#include "channel_estimator.h"
 #include  "Remove_CP.h"
+#include "subcarrier_demapping.h"
 
 struct complex ifft_time_samples[FFT_SIZE];
 struct complex training_one_time_samples[FFT_SIZE];
@@ -124,11 +128,9 @@ int main() {
         }
     }
 
-    for (int j = 368; j < 384; j++) {
-        printf("%f, ", flattened[j].real);
-    }
-
-    printf("\nbreak \n");
+    // for (int j = 368; j < 384; j++) {
+    //     printf("%f, ", flattened[j].real);
+    // }
 
 
     //Add CP stuff
@@ -141,11 +143,10 @@ int main() {
 
     Add_CP(final_symbols, flattened, final_symbols_length);
 
-    for (int j = 400; j < 480; j++) {
-        printf("%f, ", final_symbols[j].real);
-    }
+    // for (int j = 400; j < 480; j++) {
+    //     printf("%f, ", final_symbols[j].real);
+    // }
 
-    printf("\nbreak \n");
 
     //combine training and OFDM symbols
     struct complex final_TX[final_train_length + final_symbols_length];
@@ -169,8 +170,53 @@ int main() {
     struct complex RX_without_CP[output_len];
     Remove_CP(RX_without_CP, final_TX, TX_length);
 
-    for (int i = 0; i < output_len; i++) {
-        printf("real %f, imag %f \n", RX_without_CP[i].real, RX_without_CP[i].imag);
+    // for (int i = 0; i < output_len; i++) {
+    //     printf("real %f, imag %f \n", RX_without_CP[i].real, RX_without_CP[i].imag);
+    // }
+
+    //after timing acquisition we know training is here
+    struct complex Rx_training_one[64];
+    struct complex Rx_training_two[64];
+
+    for (int i = 0; i < 1; i++) {
+        Rx_training_one[i] = RX_without_CP[i];
+        Rx_training_two[i] = RX_without_CP[i+64];
+    }
+
+    //fft for RX training
+    struct complex Rx_fft_training_one[64];
+    struct complex Rx_fft_training_two[64];
+
+    fft(Rx_fft_training_one, Rx_training_one);
+    fft(Rx_fft_training_two, Rx_training_two);
+
+    //sub-carrier de mapping
+    struct complex Rx_fft_training_one_mapped[52];
+    struct complex Rx_fft_training_two_mapped[52];
+
+    sub_de_map(Rx_fft_training_one, Rx_fft_training_one_mapped);
+    sub_de_map(Rx_fft_training_two, Rx_fft_training_two_mapped);
+
+    //channel estimation
+    struct complex H1[52];
+    struct complex H2[52];
+
+    for (int i = 0; i < 52; i++) {
+        H1[i] = cmultiply(Rx_fft_training_one_mapped[i], training[i]);
+        H2[i] = cmultiply(Rx_fft_training_two_mapped[i], training[i]);
+    }
+
+    struct complex H_est[52];
+    estimation(H1, H2, H_est);
+
+    for (int i = 0; i < 52; i++) {
+        printf("real %f, imag %f \n", H1[i].real, H1[i].imag);
+    }
+
+    printf("\nbreak \n");
+
+    for (int i = 0; i < 52; i++) {
+        printf("real %f, imag %f \n", H2[i].real, H2[i].imag);
     }
 
     return 0;
