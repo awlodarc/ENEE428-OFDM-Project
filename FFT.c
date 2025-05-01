@@ -4,6 +4,7 @@
 
 #include "FFT.h"
 #include "operations.h"
+#include "config.h"
 #include <math.h>
 
 struct complex Wfft[FFT_SIZE/2];

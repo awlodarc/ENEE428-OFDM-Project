@@ -3,6 +3,7 @@
 //
 
 #include "generate_sequence.h"
+#include "config.h"
 #include <stdio.h>
 
 static unsigned char sequence[out_length];

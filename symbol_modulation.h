@@ -4,12 +4,11 @@
 
 #ifndef SYMBOL_MODULATION_H
 #define SYMBOL_MODULATION_H
-
 #include "operations.h"
 
-#define bpsk_length 52
-#define qpsk_length 104
-#define sixteenqam_length 208
+// #define bpsk_length 52
+// #define qpsk_length 104
+// #define sixteenqam_length 208
 
 // Functions that map input bits to modulation symbols
 struct complex* bpsk(const unsigned char* input);

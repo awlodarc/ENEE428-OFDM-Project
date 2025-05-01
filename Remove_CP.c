@@ -3,8 +3,7 @@
 //
 
 #include "Remove_CP.h"
-#include "FFT.h"
-#include "Add_CP.h"
+#include "config.h"
 
 void Remove_CP(struct complex* output, struct complex* input, int input_len) {
 

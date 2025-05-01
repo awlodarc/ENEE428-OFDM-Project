@@ -3,8 +3,8 @@
 //
 
 #include "Add_CP.h"
+#include "config.h"
 #include "operations.h"
-#include "FFT.h"
 
 void Add_CP(struct complex* output, struct complex* input, int input_len) {
 
