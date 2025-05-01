@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "config.h"
 #include "generate_sequence.h"
 #include "operations.h"
 #include "symbol_modulation.h"
@@ -6,7 +7,7 @@
 #include "FFT.h"
 #include "IFFT.h"
 #include "Add_CP.h"
-#include  "Remove_CP.h"
+#include "Remove_CP.h"
 
 struct complex ifft_time_samples[FFT_SIZE];
 struct complex training_one_time_samples[FFT_SIZE];

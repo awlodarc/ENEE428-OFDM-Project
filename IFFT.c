@@ -5,6 +5,7 @@
 #include "IFFT.h"
 #include "FFT.h"
 #include "operations.h"
+#include "config.h"
 
 struct complex temp_in[FFT_SIZE];
 struct complex temp_out[FFT_SIZE];

@@ -4,12 +4,11 @@
 
 #ifndef FFT_H
 #define FFT_H
-
 #include "operations.h"
 
-#define pi 3.14159265358979323846
-#define FFT_SIZE 64
-#define LOG_FFT_SIZE 6
+// #define pi 3.14159265358979323846
+// #define FFT_SIZE 64
+// #define LOG_FFT_SIZE 6
 
 void revOrder();
 void twiddleFactorsFFT();

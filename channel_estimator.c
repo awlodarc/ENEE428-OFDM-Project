@@ -7,7 +7,6 @@
 
 void estimation(struct complex* H1, struct complex* H2, struct complex* H_est) {
   // Call this inside of main when you want to  run it
-
   // struct complex H1[52];
   // struct complex H2[52];
 

@@ -4,7 +4,6 @@
 
 #ifndef SUBCARRIER_MAPPING_H
 #define SUBCARRIER_MAPPING_H
-
 #include "operations.h"
 
 struct complex* sub_map(struct complex* input);

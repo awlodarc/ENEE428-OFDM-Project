@@ -4,8 +4,8 @@
 
 #include "symbol_modulation.h"
 #include "operations.h"
-#include "generate_sequence.h"
 #include <math.h>
+#include "config.h"
 
 //bpsk
 struct complex bpsk_out[out_length];

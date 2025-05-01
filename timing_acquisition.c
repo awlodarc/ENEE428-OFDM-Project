@@ -4,8 +4,8 @@
 
 #include "timing_acquisition.h"
 #include "operations.h"
-#include "FFT.h"
 #include "stdbool.h"
+#include "config.h"
 
 void correlation(struct complex* r, struct complex* s, int ko, struct complex* convolution) {
     struct complex complex_conj;

@@ -4,7 +4,6 @@
 
 #ifndef REMOVE_CP_H
 #define REMOVE_CP_H
-
 #include "operations.h"
 
 void Remove_CP(struct complex* output, struct complex* input, int input_len);
