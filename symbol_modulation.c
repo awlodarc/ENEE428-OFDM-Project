@@ -11,17 +11,17 @@
 struct complex bpsk_out[out_length];
 
 struct complex* bpsk(const unsigned char* input) {
-    for (int i = 0; i < out_length; i++) {
-      if (input[i] == 0){
-        bpsk_out[i].real = -1;
-        bpsk_out[i].imag = 0;
-      }
-      else if (input[i] == 1){
-        bpsk_out[i].real = 1;
-        bpsk_out[i].imag = 0;
-      }
+  for (int i = 0; i < out_length; i++) {
+    if (input[i] == 0){
+      bpsk_out[i].real = -1;
+      bpsk_out[i].imag = 0;
     }
-    return bpsk_out;
+    else if (input[i] == 1){
+      bpsk_out[i].real = 1;
+      bpsk_out[i].imag = 0;
+    }
+  }
+  return bpsk_out;
 }
 
 //qpsk
