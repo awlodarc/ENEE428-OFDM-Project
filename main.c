@@ -38,16 +38,16 @@ int main() {
 
     //flatten training
     struct complex flat_training[128];
-    for (int i = 0; i < 64; i++) {
+    int i, j;
+    for (i = 0; i < 64; i++) {
         flat_training[i] = training_one_time_samples[i];         // Copy first array
         flat_training[i + 64] = training_two_time_samples[i];    // Copy second array, offset by 64
     }
 
     //Add CP training
-    const int training_length = sizeof(flat_training) / sizeof(flat_training[0]);
-
-    const int num_blocks = training_length / BLOCK_SIZE;
-    const int final_train_length = num_blocks * BLOCK_WITH_CP;
+    #define training_length (sizeof(flat_training) / sizeof(flat_training[0]))
+    #define num_blocks (training_length / BLOCK_SIZE)
+    #define final_train_length (num_blocks * BLOCK_WITH_CP)
 
     struct complex final_training[final_train_length];
 
@@ -56,7 +56,7 @@ int main() {
     //OFDM generation
     const unsigned char* seq = get_lfsr_sequence();
 
-    for (int i = 0; i < 200; i++) {
+    for (i = 0; i < 200; i++) {
         printf("%d, ", seq[i]);
     }
     printf("\n\n");
@@ -77,8 +77,8 @@ int main() {
 
     struct complex symbols[num_symb][sub_size] = {0};
 
-    for (int i = 0; i < num_symb; i++) {
-        for (int j = 0; j < sub_size; j++) {
+    for (i = 0; i < num_symb; i++) {
+        for (j = 0; j < sub_size; j++) {
             int index = i * sub_size + j;
             if (index < modulated_length) {
                 symbols[i][j] = modulated[index];
@@ -100,9 +100,9 @@ int main() {
     //sub carrier mapping
     struct complex mapped_symb[num_symb][64] = {0};
 
-    for (int i = 0; i < num_symb; i++) {
+    for (i = 0; i < num_symb; i++) {
         struct complex* mapped = sub_map(symbols[i]);  // Pass 52 elements
-        for (int j = 0; j < 64; j++) {
+        for (j = 0; j < 64; j++) {
             mapped_symb[i][j] = mapped[j];
         }
     }
@@ -116,9 +116,9 @@ int main() {
     struct complex ifft_time_samples[FFT_SIZE];
     struct complex ifft_chunks[num_symb][64] = {0};
 
-    for (int i = 0; i < num_symb; i++) {
+    for (i = 0; i < num_symb; i++) {
         ifft(ifft_time_samples, mapped_symb[i]);
-        for (int j = 0; j < 64; j++) {
+        for (j = 0; j < 64; j++) {
             ifft_chunks[i][j] = ifft_time_samples[j];
         }
     }
@@ -127,8 +127,8 @@ int main() {
     // P/S
     struct complex flattened[num_symb * 64];
 
-    for (int i = 0; i < num_symb; i++) {
-        for (int j = 0; j < 64; j++) {
+    for (i = 0; i < num_symb; i++) {
+        for (j = 0; j < 64; j++) {
             flattened[i * 64 + j] = ifft_chunks[i][j];
         }
     }
@@ -139,10 +139,9 @@ int main() {
 
 
     //Add CP stuff
-    const int symbols_length = sizeof(flattened) / sizeof(flattened[0]);
-
-    const int symbols_num_blocks = symbols_length / BLOCK_SIZE;
-    const int final_symbols_length = symbols_num_blocks * BLOCK_WITH_CP;
+    #define symbols_length (sizeof(flattened) / sizeof(flattened[0]))
+    #define symbols_num_blocks (symbols_length / BLOCK_SIZE)
+    #define final_symbols_length (symbols_num_blocks * BLOCK_WITH_CP)
 
     struct complex final_symbols[final_symbols_length];
 
@@ -159,11 +158,11 @@ int main() {
 
     //combine training and OFDM symbols
     struct complex final_TX[final_train_length + final_symbols_length];
-    for (int i = 0; i < final_train_length; i++) {
+    for (i = 0; i < final_train_length; i++) {
         final_TX[i].real = final_training[i].real;
         final_TX[i].imag = final_training[i].imag;
     }
-    for (int i = 0; i < final_symbols_length; i++) {
+    for (i = 0; i < final_symbols_length; i++) {
         final_TX[i+final_train_length].real = final_symbols[i].real;
         final_TX[i+final_train_length].imag = final_symbols[i].imag;
     }
@@ -177,9 +176,9 @@ int main() {
     //          Receiver        //
 
     //Remove CP
-    const int TX_length = sizeof(final_TX) / sizeof(final_TX[0]);
+    #define TX_length (sizeof(final_TX) / sizeof(final_TX[0]))
+    #define output_len (TX_length * BLOCK_SIZE / BLOCK_WITH_CP)
 
-    const int output_len = TX_length * BLOCK_SIZE / BLOCK_WITH_CP;
     struct complex RX_without_CP[output_len];
     Remove_CP(RX_without_CP, final_TX, TX_length);
 
@@ -193,7 +192,7 @@ int main() {
     struct complex Rx_training_one[64];
     struct complex Rx_training_two[64];
 
-    for (int i = 0; i < 64; i++) {
+    for (i = 0; i < 64; i++) {
         Rx_training_one[i] = RX_without_CP[i];
         Rx_training_two[i] = RX_without_CP[i+64];
     }
@@ -216,7 +215,7 @@ int main() {
     struct complex H1[52];
     struct complex H2[52];
 
-    for (int i = 0; i < 52; i++) {
+    for (i = 0; i < 52; i++) {
         H1[i] = cmultiply(Rx_fft_training_one_demapped[i], training[i]);
         H2[i] = cmultiply(Rx_fft_training_two_demapped[i], training[i]);
     }
@@ -229,10 +228,10 @@ int main() {
 
     //Only OFDM RX stuff
 
-    const int Rx_data_length = output_len-128;
+    #define Rx_data_length (output_len-128)
     struct complex Rx_data[Rx_data_length];
 
-    for (int i = 0; i < Rx_data_length; i++) {
+    for (i = 0; i < Rx_data_length; i++) {
         Rx_data[i] = RX_without_CP[i+128];
     }
 
@@ -241,8 +240,8 @@ int main() {
 
         struct complex RX_symbols[num_symb][RX_sub_size] = {0};
 
-        for (int i = 0; i < num_symb; i++) {
-            for (int j = 0; j < RX_sub_size; j++) {
+        for (i = 0; i < num_symb; i++) {
+            for (j = 0; j < RX_sub_size; j++) {
                 int index = i * RX_sub_size + j;
                 if (index < Rx_data_length) {
                     RX_symbols[i][j] = Rx_data[index];
@@ -257,9 +256,9 @@ int main() {
     struct complex fft_freq_samples[FFT_SIZE];
     struct complex RX_fft_chunks[num_symb][64] = {0};
 
-    for (int i = 0; i < num_symb; i++) {
+    for (i = 0; i < num_symb; i++) {
         fft(fft_freq_samples, RX_symbols[i]);
-        for (int j = 0; j < 64; j++) {
+        for (j = 0; j < 64; j++) {
             RX_fft_chunks[i][j] = fft_freq_samples[j];
         }
     }
@@ -268,10 +267,10 @@ int main() {
     //RX sub carrier de-mapper
     struct complex RX_demapped_symb[num_symb][52];
 
-    for (int i = 0; i < num_symb; i++) {
+    for (i = 0; i < num_symb; i++) {
         struct complex demapped[52];
         sub_de_map(RX_fft_chunks[i], demapped);  // Pass 52 elements
-        for (int j = 0; j < 52; j++) {
+        for (j = 0; j < 52; j++) {
             RX_demapped_symb[i][j] = demapped[j];
         }
     }
@@ -285,18 +284,18 @@ int main() {
     //Equalizer
     struct complex RX_equalized[num_symb][52];
 
-    for (int i = 0; i < num_symb; i++) {
+    for (i = 0; i < num_symb; i++) {
         struct complex equalized[52];
         equalizer(RX_demapped_symb[i], H_est, equalized);  // Pass 52 elements
-        for (int j = 0; j < 52; j++) {
+        for (j = 0; j < 52; j++) {
             RX_equalized[i][j] = equalized[j];
         }
     }
 
     struct complex RX_flat[modulated_length] = {0};
 
-    for (int i = 0; i < num_symb; i++) {
-        for (int j = 0; j < 52; j++) {
+    for (i = 0; i < num_symb; i++) {
+        for (j = 0; j < 52; j++) {
             RX_flat[i * 52 + j] = RX_equalized[i][j];
         }
     }
@@ -305,7 +304,7 @@ int main() {
     unsigned char RX_final[modulated_length*mod_type];
     bit_detection(RX_flat, RX_final);
 
-    for (int i = 0; i < 200; i++) {
+    for (i = 0; i < 200; i++) {
         printf("%d, ", RX_final[i]);
     }
     printf("\n\n");
@@ -313,7 +312,7 @@ int main() {
 
     //bit error rate
     int bit_errors = 0;
-    for (int i = 0; i < out_length; i++) {
+    for (i = 0; i < out_length; i++) {
         if (seq[i] != RX_final[i]) {
             bit_errors++;
         }
