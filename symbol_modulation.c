@@ -51,10 +51,10 @@ void modulate(const unsigned char* input, struct complex* output){
 
   if (mod_type == 4) {
     for (int i = 0; i < out_length/4; i++) {
-      int bit1 = input[4*i];
-      int bit2 = input[4*i + 1];
-      int bit3 = input[4*i + 2];
-      int bit4 = input[4*i + 3];
+      int bit4 = input[4*i];
+      int bit3 = input[4*i + 1];
+      int bit2 = input[4*i + 2];
+      int bit1 = input[4*i + 3];
 
       // Form the bit pair
       if (bit1 == 0 && bit2 == 0 && bit3 == 1 && bit4 == 0) {
@@ -80,7 +80,7 @@ void modulate(const unsigned char* input, struct complex* output){
         output[i].imag = 1.0 / sqrt(10);
       } else if (bit1 == 1 && bit2 == 0 && bit3 == 1 && bit4 == 1) {
         output[i].real = 3.0 / sqrt(10);
-        output[i].imag = -1.0 / sqrt(10);
+        output[i].imag = 1.0 / sqrt(10);
       } else if (bit1 == 0 && bit2 == 0 && bit3 == 0 && bit4 == 1) {
         output[i].real = -3.0 / sqrt(10);
         output[i].imag = -1.0 / sqrt(10);

@@ -23,8 +23,8 @@ unsigned int swap_bits(unsigned int num){
 }
 
 const unsigned char* get_lfsr_sequence() {
-    unsigned int h = 0b0001001;
-    const unsigned int init_state = 0b0001001;
+    unsigned int h = 0b000000000000011;
+    const unsigned int init_state = 0b100000000000000;
     unsigned int new_h = swap_bits(h);
     unsigned int state = swap_bits(init_state);
     unsigned int anded;
@@ -40,7 +40,7 @@ const unsigned char* get_lfsr_sequence() {
         }
         sequence[i] = sum;
         // shift state left over 1 (drops msb) and then fill that spot with sum
-        state = ((state << 1) & 0x7F) | sum;
+        state = (state << 1) | sum;
     }
     return sequence;
 }

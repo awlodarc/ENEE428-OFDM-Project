@@ -56,30 +56,31 @@ int main() {
     //OFDM generation
     const unsigned char* seq = get_lfsr_sequence();
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 200; i++) {
         printf("%d, ", seq[i]);
     }
-    printf("\n");
+    printf("\n\n");
 
-    //bpsk modulation api
-    struct complex modulated[out_length];
+    //modulation api
+    struct complex modulated[modulated_length];
     modulate(seq, modulated);
 
-    // for (int i = 298; i < 350; i++) {
-    //     printf("%f, ", modulated[i].real);
+    // for (int i = 0; i < 52; i++) {
+    //     printf("%f, %f\n", modulated[i].real, modulated[i].imag);
     // }
     // printf("\n");
 
+
     // S/P
     #define sub_size 52
-    #define num_symb (out_length / sub_size + (out_length % sub_size != 0))
+    #define num_symb (modulated_length / sub_size + (modulated_length % sub_size != 0))
 
     struct complex symbols[num_symb][sub_size] = {0};
 
     for (int i = 0; i < num_symb; i++) {
         for (int j = 0; j < sub_size; j++) {
             int index = i * sub_size + j;
-            if (index < out_length) {
+            if (index < modulated_length) {
                 symbols[i][j] = modulated[index];
             } else {
                 symbols[i][j].real = 0;
@@ -90,7 +91,7 @@ int main() {
 
 
     // for (int j = 0; j < sub_size; j++) {
-    //     printf("%f, ", symbols[6][j].real);
+    //     printf("%f, ", symbols[2][j].real);
     // }
     //
     // printf("\nbreak\n");
@@ -276,10 +277,10 @@ int main() {
     }
 
     // for (int j = 0; j < 52; j++) {
-    //     printf("%f, ", RX_demapped_symb[6][j].real);
+    //     printf("%f, ", RX_demapped_symb[2][j].real);
     // }
-    //
     // printf("\nbreak\n");
+
 
     //Equalizer
     struct complex RX_equalized[num_symb][52];
@@ -292,36 +293,19 @@ int main() {
         }
     }
 
-    // for (int j = 0; j < 52; j++) {
-    //     printf("%f, ", RX_equalized[6][j].real);
-    // }
-    //
-    // printf("\nbreak\n");
+    struct complex RX_flat[modulated_length] = {0};
+
+    for (int i = 0; i < num_symb; i++) {
+        for (int j = 0; j < 52; j++) {
+            RX_flat[i * 52 + j] = RX_equalized[i][j];
+        }
+    }
 
     //bit detector
-    unsigned char RX_bit_detected[num_symb][52*mod_type];
+    unsigned char RX_final[modulated_length*mod_type];
+    bit_detection(RX_flat, RX_final);
 
-    for (int i = 0; i < num_symb; i++) {
-       unsigned char detected[52*mod_type];
-        bit_detection(RX_equalized[i], detected);  // Pass 52 elements
-        for (int j = 0; j < 52; j++) {
-            RX_bit_detected[i][j] = detected[j];
-        }
-    }
-
-    // for (int j = 0; j < 52; j++) {
-    //     printf("%hhu, ", RX_bit_detected[6][j]);
-    // }
-
-    unsigned char RX_final[num_symb * 52];
-
-    for (int i = 0; i < num_symb; i++) {
-        for (int j = 0; j < 52; j++) {
-            RX_final[i * 52 + j] = RX_bit_detected[i][j];
-        }
-    }
-
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 200; i++) {
         printf("%d, ", RX_final[i]);
     }
     printf("\n\n");
@@ -337,8 +321,6 @@ int main() {
 
     double ber = (double)bit_errors / out_length;
     printf("ber %f", ber);
-
-
 
     return 0;
 }
