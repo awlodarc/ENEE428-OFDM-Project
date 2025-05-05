@@ -5,8 +5,9 @@
 #include "bit_detection.h"
 #include "operations.h"
 #include "math.h"
+#include "config.h"
 
-void bit_detection(struct complex* input, int* output, int mod_type) {
+void bit_detection(struct complex* input, unsigned char* output) {
     // make sure you have int output[52 * MOD_TYPE]; in main
 
     if (mod_type == 1) {
