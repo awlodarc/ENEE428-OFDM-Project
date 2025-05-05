@@ -1,6 +1,6 @@
 #include <stdio.h>
+#include "config.h"
 #include <stdlib.h>
-
 #include "generate_sequence.h"
 #include "operations.h"
 #include "symbol_modulation.h"
@@ -8,6 +8,7 @@
 #include "FFT.h"
 #include "IFFT.h"
 #include "Add_CP.h"
+#include "Remove_CP.h"
 #include "channel_estimator.h"
 #include "equalizer.h"
 #include  "Remove_CP.h"

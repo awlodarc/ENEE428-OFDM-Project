@@ -4,8 +4,8 @@
 
 #include "signal_power_estimation.h"
 #include "operations.h"
-#include "FFT.h"
 #include "stdbool.h"
+#include "config.h"
 
 bool signal_detected(struct complex* r) {
     double p_avg = 0;

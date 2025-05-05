@@ -4,7 +4,6 @@
 
 #ifndef IFFT_H
 #define IFFT_H
-
 #include "operations.h"
 
 void ifft(struct complex* time_samples, struct complex* input);

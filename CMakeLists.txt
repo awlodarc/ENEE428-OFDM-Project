@@ -32,4 +32,6 @@ add_executable(Final_Project main.c
         subcarrier_demapping.h
         Remove_CP.c
         Remove_CP.h
+        config.c
+        config.h
 )
