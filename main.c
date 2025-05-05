@@ -88,11 +88,11 @@ int main() {
     }
 
 
-    for (int j = 0; j < sub_size; j++) {
-        printf("%f, ", symbols[0][j].real);
-    }
-
-    printf("\nbreak\n");
+    // for (int j = 0; j < sub_size; j++) {
+    //     printf("%f, ", symbols[6][j].real);
+    // }
+    //
+    // printf("\nbreak\n");
 
 
     //sub carrier mapping
@@ -177,7 +177,7 @@ int main() {
     //Remove CP
     const int TX_length = sizeof(final_TX) / sizeof(final_TX[0]);
 
-    int output_len = TX_length * BLOCK_SIZE / BLOCK_WITH_CP;
+    const int output_len = TX_length * BLOCK_SIZE / BLOCK_WITH_CP;
     struct complex RX_without_CP[output_len];
     Remove_CP(RX_without_CP, final_TX, TX_length);
 
@@ -227,23 +227,22 @@ int main() {
 
     //Only OFDM RX stuff
 
-    const int Rx_data_length = output_len-64;
+    const int Rx_data_length = output_len-128;
     struct complex Rx_data[Rx_data_length];
 
     for (int i = 0; i < Rx_data_length; i++) {
-        Rx_data[i] = RX_without_CP[i+64];
+        Rx_data[i] = RX_without_CP[i+128];
     }
 
     // S/P
     #define RX_sub_size 64
-    #define RX_num_symb (out_length / RX_sub_size + (out_length % RX_sub_size != 0))
 
-        struct complex RX_symbols[RX_num_symb][RX_sub_size] = {0};
+        struct complex RX_symbols[num_symb][RX_sub_size] = {0};
 
-        for (int i = 0; i < RX_num_symb; i++) {
+        for (int i = 0; i < num_symb; i++) {
             for (int j = 0; j < RX_sub_size; j++) {
                 int index = i * RX_sub_size + j;
-                if (index < out_length) {
+                if (index < Rx_data_length) {
                     RX_symbols[i][j] = Rx_data[index];
                 } else {
                     RX_symbols[i][j].real = 0;
@@ -254,9 +253,9 @@ int main() {
 
     //OFDM fft
     struct complex fft_freq_samples[FFT_SIZE];
-    struct complex RX_fft_chunks[RX_num_symb][64] = {0};
+    struct complex RX_fft_chunks[num_symb][64] = {0};
 
-    for (int i = 0; i < RX_num_symb; i++) {
+    for (int i = 0; i < num_symb; i++) {
         fft(fft_freq_samples, RX_symbols[i]);
         for (int j = 0; j < 64; j++) {
             RX_fft_chunks[i][j] = fft_freq_samples[j];
@@ -265,9 +264,9 @@ int main() {
 
 
     //RX sub carrier de-mapper
-    struct complex RX_demapped_symb[RX_num_symb][52];
+    struct complex RX_demapped_symb[num_symb][52];
 
-    for (int i = 0; i < RX_num_symb; i++) {
+    for (int i = 0; i < num_symb; i++) {
         struct complex demapped[52];
         sub_de_map(RX_fft_chunks[i], demapped);  // Pass 52 elements
         for (int j = 0; j < 52; j++) {
@@ -275,17 +274,16 @@ int main() {
         }
     }
 
-    for (int j = 0; j < 52; j++) {
-        printf("%f, ", RX_demapped_symb[1][j].real);
-    }
-
-    //working but needs to be RX_demapped_symb[1][j] not RX_demapped_symb[0][j]???
-
+    // for (int j = 0; j < 52; j++) {
+    //     printf("%f, ", RX_demapped_symb[6][j].real);
+    // }
+    //
+    // printf("\nbreak\n");
 
     //Equalizer
-    struct complex RX_equalized[RX_num_symb][52];
+    struct complex RX_equalized[num_symb][52];
 
-    for (int i = 0; i < RX_num_symb; i++) {
+    for (int i = 0; i < num_symb; i++) {
         struct complex equalized[52];
         equalizer(RX_demapped_symb[i], H_est, equalized);  // Pass 52 elements
         for (int j = 0; j < 52; j++) {
@@ -293,7 +291,9 @@ int main() {
         }
     }
 
-    //bit
+    // for (int j = 0; j < 52; j++) {
+    //     printf("%f, ", RX_equalized[6][j].real);
+    // }
 
     return 0;
 }
