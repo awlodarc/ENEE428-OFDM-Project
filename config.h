@@ -17,7 +17,7 @@
 
 // generate sequence
 #define reg_length 15
-#define out_length 4160
+#define out_length 4000
 
 // symbol modulation
 #define bpsk_length 52
@@ -25,7 +25,7 @@
 #define sixteenqam_length 208
 
 // modulation type 1 bpsk, 2 qpsk, 4 16qam
-#define mod_type 4
+#define mod_type 1
 #define modulated_length out_length/mod_type
 
 #endif //CONFIG_H
