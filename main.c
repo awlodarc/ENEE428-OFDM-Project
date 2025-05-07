@@ -283,17 +283,20 @@ int main() {
     //Only OFDM RX stuff
 
     #define Rx_data_length (output_len-128)
-    //struct complex Rx_data[Rx_data_length];
     struct complex* Rx_data = malloc(Rx_data_length * sizeof(struct complex));
 
     for (i = 0; i < Rx_data_length; i++) {
         Rx_data[i] = RX_without_CP[i+128];
     }
 
+    free(RX_without_CP);
+
     // S/P
     #define RX_sub_size 64
-
-    struct complex RX_symbols[num_symb][RX_sub_size] = {0};
+    struct complex** RX_symbols = malloc(num_symb * sizeof(struct complex*));
+    for (i = 0; i < num_symb; i++) {
+        RX_symbols[i] = calloc(RX_sub_size, sizeof(struct complex));
+    }
 
     for (i = 0; i < num_symb; i++) {
         for (j = 0; j < RX_sub_size; j++) {
@@ -310,8 +313,12 @@ int main() {
     free(Rx_data);
 
     //OFDM fft
-    struct complex fft_freq_samples[FFT_SIZE];
-    struct complex RX_fft_chunks[num_symb][64] = {0};
+    struct complex* fft_freq_samples = malloc(FFT_SIZE * sizeof(struct complex));
+
+    struct complex** RX_fft_chunks = malloc(num_symb * sizeof(struct complex*));
+    for (i = 0; i < num_symb; i++) {
+        RX_fft_chunks[i] = calloc(64, sizeof(struct complex));
+    }
 
     for (i = 0; i < num_symb; i++) {
         fft(fft_freq_samples, RX_symbols[i]);
@@ -320,9 +327,17 @@ int main() {
         }
     }
 
+    for (i = 0; i < num_symb; i++) {
+        free(RX_symbols[i]);
+    }
+    free(RX_symbols);
+
 
     //RX sub carrier de-mapper
-    struct complex RX_demapped_symb[num_symb][52];
+    struct complex** RX_demapped_symb = malloc(num_symb * sizeof(struct complex*));
+    for (i = 0; i < num_symb; i++) {
+        RX_demapped_symb[i] = calloc(52, sizeof(struct complex));
+    }
 
     for (i = 0; i < num_symb; i++) {
         struct complex demapped[52];
@@ -332,6 +347,11 @@ int main() {
         }
     }
 
+    for (i = 0; i < num_symb; i++) {
+        free(RX_fft_chunks[i]);
+    }
+    free(RX_fft_chunks);
+
     // for (int j = 0; j < 52; j++) {
     //     printf("%f, ", RX_demapped_symb[2][j].real);
     // }
@@ -339,7 +359,10 @@ int main() {
 
 
     //Equalizer
-    struct complex RX_equalized[num_symb][52];
+    struct complex** RX_equalized = malloc(num_symb * sizeof(struct complex*));
+    for (i = 0; i < num_symb; i++) {
+        RX_equalized[i] = calloc(52, sizeof(struct complex));
+    }
 
     for (i = 0; i < num_symb; i++) {
         struct complex equalized[52];
@@ -349,7 +372,14 @@ int main() {
         }
     }
 
-    struct complex RX_flat[modulated_length] = {0};
+    free(H_est);
+
+    for (i = 0; i < num_symb; i++) {
+        free(RX_demapped_symb[i]);
+    }
+    free(RX_demapped_symb);
+
+    struct complex* RX_flat = calloc(modulated_length, sizeof(struct complex));
 
     for (i = 0; i < num_symb; i++) {
         for (j = 0; j < 52; j++) {
@@ -357,9 +387,18 @@ int main() {
         }
     }
 
+    for (i = 0; i < num_symb; i++) {
+        free(RX_equalized[i]);
+    }
+    free(RX_equalized);
+
+
     //bit detector
-    unsigned char RX_final[modulated_length*mod_type];
+    #define RX_final_length (modulated_length*mod_type)
+    unsigned char* RX_final = malloc(RX_final_length * sizeof(struct complex));
     bit_detection(RX_flat, RX_final);
+
+    free(RX_flat);
 
     for (i = 0; i < 200; i++) {
         printf("%d, ", RX_final[i]);
@@ -377,6 +416,8 @@ int main() {
 
     double ber = (double)bit_errors / out_length;
     printf("ber %f", ber);
+
+    free(RX_final);
 
     return 0;
 }

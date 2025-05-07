@@ -17,7 +17,7 @@
 
 // generate sequence
 #define reg_length 15
-#define out_length 4000
+#define out_length 208
 
 // symbol modulation
 #define bpsk_length 52
