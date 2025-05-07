@@ -240,6 +240,10 @@ int main() {
         Rx_training_two[i] = RX_without_CP[i+64];
     }
 
+    // for (i = 0; i < 64; i++) {
+    //     printf("real %f, imag %f \n", Rx_training_two[i].real, Rx_training_two[i].imag);
+    // }
+
     //fft for RX training
     struct complex* Rx_fft_training_one = malloc(64 * sizeof(struct complex));
     struct complex* Rx_fft_training_two = malloc(64 * sizeof(struct complex));
@@ -340,11 +344,12 @@ int main() {
     }
 
     for (i = 0; i < num_symb; i++) {
-        struct complex demapped[52];
+        struct complex* demapped = malloc(52 * sizeof(struct complex));
         sub_de_map(RX_fft_chunks[i], demapped);  // Pass 52 elements
         for (j = 0; j < 52; j++) {
             RX_demapped_symb[i][j] = demapped[j];
         }
+        free(demapped);
     }
 
     for (i = 0; i < num_symb; i++) {
@@ -365,11 +370,12 @@ int main() {
     }
 
     for (i = 0; i < num_symb; i++) {
-        struct complex equalized[52];
+        struct complex* equalized = malloc(52 * sizeof(struct complex));
         equalizer(RX_demapped_symb[i], H_est, equalized);  // Pass 52 elements
         for (j = 0; j < 52; j++) {
             RX_equalized[i][j] = equalized[j];
         }
+        free(equalized);
     }
 
     free(H_est);
@@ -386,6 +392,11 @@ int main() {
             RX_flat[i * 52 + j] = RX_equalized[i][j];
         }
     }
+    //
+    // for (i = 0; i < 52; i++) {
+    //     printf("%f, ", RX_equalized[0][i].real);
+    // }
+    // printf("\n\n");
 
     for (i = 0; i < num_symb; i++) {
         free(RX_equalized[i]);
@@ -395,8 +406,9 @@ int main() {
 
     //bit detector
     #define RX_final_length (modulated_length*mod_type)
-    unsigned char* RX_final = malloc(RX_final_length * sizeof(struct complex));
+    unsigned char* RX_final = malloc(RX_final_length);
     bit_detection(RX_flat, RX_final);
+
 
     free(RX_flat);
 
@@ -415,7 +427,7 @@ int main() {
     }
 
     double ber = (double)bit_errors / out_length;
-    printf("ber %f", ber);
+    printf("ber %f\n\n", ber);
 
     free(RX_final);
 
