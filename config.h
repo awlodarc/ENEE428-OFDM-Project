@@ -16,12 +16,16 @@
 #define LOG_FFT_SIZE 6
 
 // generate sequence
-#define reg_length 7
-#define out_length 364
+#define reg_length 15
+#define out_length 4160
 
 // symbol modulation
 #define bpsk_length 52
 #define qpsk_length 104
 #define sixteenqam_length 208
+
+// modulation type 1 bpsk, 2 qpsk, 4 16qam
+#define mod_type 4
+#define modulated_length out_length/mod_type
 
 #endif //CONFIG_H
