@@ -33,8 +33,8 @@ int main() {
     sub_map(training, mapped_training_two);
 
     //ifft for training
-    struct complex* training_one_time_samples = malloc(FFT_SIZE * sizeof(struct complex));
-    struct complex* training_two_time_samples = malloc(FFT_SIZE * sizeof(struct complex));
+    struct complex* training_one_time_samples = calloc(FFT_SIZE, sizeof(struct complex));
+    struct complex* training_two_time_samples = calloc(FFT_SIZE,  sizeof(struct complex));
 
     ifft(training_one_time_samples, mapped_training_one);
     ifft(training_two_time_samples, mapped_training_two);
@@ -44,7 +44,7 @@ int main() {
 
     //flatten training
     #define training_length 128
-    struct complex* flat_training = malloc(training_length * sizeof(struct complex));
+    struct complex* flat_training = calloc(training_length, sizeof(struct complex));
     int i, j;
     for (i = 0; i < 64; i++) {
         flat_training[i] = training_one_time_samples[i];         // Copy first array
@@ -58,7 +58,7 @@ int main() {
     #define num_blocks (training_length / BLOCK_SIZE)
     #define final_train_length (num_blocks * BLOCK_WITH_CP)
 
-    struct complex* final_training = malloc(final_train_length * sizeof(struct complex));
+    struct complex* final_training = calloc(final_train_length, sizeof(struct complex));
 
     Add_CP(final_training, flat_training, training_length);
 
@@ -73,7 +73,7 @@ int main() {
     printf("\n\n");
 
     //modulation api
-    struct complex* modulated = malloc(modulated_length * sizeof(struct complex));
+    struct complex* modulated = calloc(modulated_length, sizeof(struct complex));
     modulate(seq, modulated);
 
     // for (int i = 0; i < 52; i++) {
@@ -86,7 +86,7 @@ int main() {
     #define sub_size 52
     #define num_symb (modulated_length / sub_size + (modulated_length % sub_size != 0))
 
-    struct complex** symbols = malloc(num_symb * sizeof(struct complex*));
+    struct complex** symbols = calloc(num_symb, sizeof(struct complex*));
     for (i = 0; i < num_symb; i++) {
         symbols[i] = calloc(sub_size, sizeof(struct complex));
     }
@@ -113,7 +113,7 @@ int main() {
 
     //sub carrier mapping
     struct complex* mapped = calloc(64, sizeof(struct complex));
-    struct complex** mapped_symb = malloc(num_symb * sizeof(struct complex*));
+    struct complex** mapped_symb = calloc(num_symb, sizeof(struct complex*));
     for (i = 0; i < num_symb; i++) {
         mapped_symb[i] = calloc(64, sizeof(struct complex));
     }
@@ -136,9 +136,9 @@ int main() {
 
 
     //ifft
-    struct complex* ifft_time_samples = malloc(FFT_SIZE * sizeof(struct complex));
+    struct complex* ifft_time_samples = calloc(FFT_SIZE, sizeof(struct complex));
 
-    struct complex** ifft_chunks = malloc(num_symb * sizeof(struct complex*));
+    struct complex** ifft_chunks = calloc(num_symb, sizeof(struct complex*));
     for (i = 0; i < num_symb; i++) {
         ifft_chunks[i] = calloc(64, sizeof(struct complex));
     }
@@ -158,7 +158,7 @@ int main() {
 
     // P/S
     #define symbols_length (num_symb * 64)
-    struct complex* flattened = malloc(symbols_length * sizeof(struct complex));
+    struct complex* flattened = calloc(symbols_length, sizeof(struct complex));
 
     for (i = 0; i < num_symb; i++) {
         for (j = 0; j < 64; j++) {
@@ -180,7 +180,7 @@ int main() {
     #define symbols_num_blocks (symbols_length / BLOCK_SIZE)
     #define final_symbols_length (symbols_num_blocks * BLOCK_WITH_CP)
 
-    struct complex* final_symbols = malloc(final_symbols_length * sizeof(struct complex));
+    struct complex* final_symbols = calloc(final_symbols_length, sizeof(struct complex));
 
     Add_CP(final_symbols, flattened, symbols_length);
 
@@ -197,7 +197,7 @@ int main() {
 
     //combine training and OFDM symbols
     #define final_TX_length (final_train_length + final_symbols_length)
-    struct complex* final_TX = malloc(final_TX_length * sizeof(struct complex));
+    struct complex* final_TX = calloc(final_TX_length, sizeof(struct complex));
 
     for (i = 0; i < final_train_length; i++) {
         final_TX[i].real = final_training[i].real;
@@ -219,7 +219,7 @@ int main() {
     //Remove CP
     #define output_len (final_TX_length * BLOCK_SIZE / BLOCK_WITH_CP)
 
-    struct complex* RX_without_CP = malloc(output_len * sizeof(struct complex));
+    struct complex* RX_without_CP = calloc(output_len, sizeof(struct complex));
     Remove_CP(RX_without_CP, final_TX, final_TX_length);
 
     free(final_TX);
@@ -232,8 +232,8 @@ int main() {
 
     //after timing acquisition we know training is here
 
-    struct complex* Rx_training_one = malloc(64 * sizeof(struct complex));
-    struct complex* Rx_training_two = malloc(64 * sizeof(struct complex));
+    struct complex* Rx_training_one = calloc(64, sizeof(struct complex));
+    struct complex* Rx_training_two = calloc(64, sizeof(struct complex));
 
     for (i = 0; i < 64; i++) {
         Rx_training_one[i] = RX_without_CP[i];
@@ -245,8 +245,8 @@ int main() {
     // }
 
     //fft for RX training
-    struct complex* Rx_fft_training_one = malloc(64 * sizeof(struct complex));
-    struct complex* Rx_fft_training_two = malloc(64 * sizeof(struct complex));
+    struct complex* Rx_fft_training_one = calloc(64, sizeof(struct complex));
+    struct complex* Rx_fft_training_two = calloc(64, sizeof(struct complex));
 
     fft(Rx_fft_training_one, Rx_training_one);
     fft(Rx_fft_training_two, Rx_training_two);
@@ -255,8 +255,8 @@ int main() {
     free(Rx_training_two);
 
     //sub-carrier de mapping
-    struct complex* Rx_fft_training_one_demapped = malloc(52 * sizeof(struct complex));
-    struct complex* Rx_fft_training_two_demapped = malloc(52 * sizeof(struct complex));
+    struct complex* Rx_fft_training_one_demapped = calloc(52, sizeof(struct complex));
+    struct complex* Rx_fft_training_two_demapped = calloc(52, sizeof(struct complex));
 
     sub_de_map(Rx_fft_training_one, Rx_fft_training_one_demapped);
     sub_de_map(Rx_fft_training_two, Rx_fft_training_two_demapped);
@@ -265,8 +265,8 @@ int main() {
     free(Rx_fft_training_two);
 
     //channel estimation
-    struct complex* H1 = malloc(52 * sizeof(struct complex));
-    struct complex* H2 = malloc(52 * sizeof(struct complex));
+    struct complex* H1 = calloc(52, sizeof(struct complex));
+    struct complex* H2 = calloc(52, sizeof(struct complex));
 
     for (i = 0; i < 52; i++) {
         H1[i] = cmultiply(Rx_fft_training_one_demapped[i], training[i]);
@@ -276,7 +276,7 @@ int main() {
     free(Rx_fft_training_one_demapped);
     free(Rx_fft_training_two_demapped);
 
-    struct complex* H_est = malloc(52 * sizeof(struct complex));
+    struct complex* H_est = calloc(52, sizeof(struct complex));
     estimation(H1, H2, H_est);
 
     free(H1);
@@ -287,7 +287,7 @@ int main() {
     //Only OFDM RX stuff
 
     #define Rx_data_length (output_len-128)
-    struct complex* Rx_data = malloc(Rx_data_length * sizeof(struct complex));
+    struct complex* Rx_data = calloc(Rx_data_length, sizeof(struct complex));
 
     for (i = 0; i < Rx_data_length; i++) {
         Rx_data[i] = RX_without_CP[i+128];
@@ -297,7 +297,7 @@ int main() {
 
     // S/P
     #define RX_sub_size 64
-    struct complex** RX_symbols = malloc(num_symb * sizeof(struct complex*));
+    struct complex** RX_symbols = calloc(num_symb, sizeof(struct complex*));
     for (i = 0; i < num_symb; i++) {
         RX_symbols[i] = calloc(RX_sub_size, sizeof(struct complex));
     }
@@ -317,9 +317,9 @@ int main() {
     free(Rx_data);
 
     //OFDM fft
-    struct complex* fft_freq_samples = malloc(FFT_SIZE * sizeof(struct complex));
+    struct complex* fft_freq_samples = calloc(FFT_SIZE, sizeof(struct complex));
 
-    struct complex** RX_fft_chunks = malloc(num_symb * sizeof(struct complex*));
+    struct complex** RX_fft_chunks = calloc(num_symb, sizeof(struct complex*));
     for (i = 0; i < num_symb; i++) {
         RX_fft_chunks[i] = calloc(64, sizeof(struct complex));
     }
@@ -338,13 +338,13 @@ int main() {
 
 
     //RX sub carrier de-mapper
-    struct complex** RX_demapped_symb = malloc(num_symb * sizeof(struct complex*));
+    struct complex** RX_demapped_symb = calloc(num_symb, sizeof(struct complex*));
     for (i = 0; i < num_symb; i++) {
         RX_demapped_symb[i] = calloc(52, sizeof(struct complex));
     }
 
     for (i = 0; i < num_symb; i++) {
-        struct complex* demapped = malloc(52 * sizeof(struct complex));
+        struct complex* demapped = calloc(52, sizeof(struct complex));
         sub_de_map(RX_fft_chunks[i], demapped);  // Pass 52 elements
         for (j = 0; j < 52; j++) {
             RX_demapped_symb[i][j] = demapped[j];
@@ -364,13 +364,13 @@ int main() {
 
 
     //Equalizer
-    struct complex** RX_equalized = malloc(num_symb * sizeof(struct complex*));
+    struct complex** RX_equalized = calloc(num_symb, sizeof(struct complex*));
     for (i = 0; i < num_symb; i++) {
         RX_equalized[i] = calloc(52, sizeof(struct complex));
     }
 
     for (i = 0; i < num_symb; i++) {
-        struct complex* equalized = malloc(52 * sizeof(struct complex));
+        struct complex* equalized = calloc(52, sizeof(struct complex));
         equalizer(RX_demapped_symb[i], H_est, equalized);  // Pass 52 elements
         for (j = 0; j < 52; j++) {
             RX_equalized[i][j] = equalized[j];
@@ -406,7 +406,7 @@ int main() {
 
     //bit detector
     #define RX_final_length (modulated_length*mod_type)
-    unsigned char* RX_final = malloc(RX_final_length);
+    unsigned char* RX_final = calloc(RX_final_length, sizeof(unsigned char));
     bit_detection(RX_flat, RX_final);
 
 
