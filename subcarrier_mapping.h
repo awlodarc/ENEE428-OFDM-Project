@@ -6,6 +6,6 @@
 #define SUBCARRIER_MAPPING_H
 #include "operations.h"
 
-struct complex* sub_map(struct complex* input);
+void sub_map(struct complex* input, struct complex* output);
 
 #endif //SUBCARRIER_MAPPING_H
