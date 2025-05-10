@@ -46,7 +46,6 @@ void bit_detection(struct complex* input, unsigned char* output) {
             float re = input[i].real*sqrt(10);
             float im = input[i].imag*sqrt(10);
 
-            // LSBs: x1 x0 → determined by real part
             if (re < -2) {
                 output[4*i + 3] = 0;
                 output[4*i + 2] = 0;
@@ -61,7 +60,6 @@ void bit_detection(struct complex* input, unsigned char* output) {
                 output[4*i + 2] = 0;
             }
 
-            // MSBs: x3 x2 → determined by imaginary part
             if (im < -2) {
                 output[4*i + 1] = 0;
                 output[4*i + 0] = 0;

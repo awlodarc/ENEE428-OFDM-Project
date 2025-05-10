@@ -24,7 +24,6 @@ void modulate(const unsigned char* input, struct complex* output){
   }
 
 //qpsk
-
   if (mod_type == 2) {
     for (int i = 0; i < out_length/2; i++) {
       int bit1 = input[2*i];
@@ -48,7 +47,6 @@ void modulate(const unsigned char* input, struct complex* output){
   }
 
   //16qam
-
   if (mod_type == 4) {
     for (int i = 0; i < out_length/4; i++) {
       int bit4 = input[4*i];

@@ -14,6 +14,7 @@
 #include "equalizer.h"
 #include  "Remove_CP.h"
 #include "subcarrier_demapping.h"
+#include "timing_acquisition.h"
 
 
 int main() {
@@ -51,7 +52,7 @@ int main() {
         flat_training[i + 64] = training_two_time_samples[i];    // Copy second array, offset by 64
     }
 
-    free(training_one_time_samples);
+    //free(training_one_time_samples);
     free(training_two_time_samples);
 
     //Add CP training
@@ -67,10 +68,10 @@ int main() {
     //OFDM generation
     const unsigned char* seq = get_lfsr_sequence();
 
-    for (i = 0; i < 200; i++) {
-        printf("%d, ", seq[i]);
-    }
-    printf("\n\n");
+    // for (i = 0; i < 200; i++) {
+    //     printf("%d, ", seq[i]);
+    // }
+    // printf("\n\n");
 
     //modulation api
     struct complex* modulated = calloc(modulated_length, sizeof(struct complex));
@@ -211,12 +212,56 @@ int main() {
     // for (i = 0; i < final_train_length+final_symbols_length; i++) {
     //     printf("index %d: Real %f, Imag %f \n", i, final_TX[i].real, final_TX[i].imag);
     // }
+    //
+    // printf("\n\nbreak\n\n");
 
 
 
     //          Receiver        //
 
+    struct complex* RX_with_crap = calloc(final_TX_length+40, sizeof(struct complex));
+
+    for (i = 0; i < final_TX_length+40; i++) {
+        if (i >= 0 && i < 40){
+            RX_with_crap[i].real = (float)i;
+            RX_with_crap[i].imag = 0;
+        } else {
+            RX_with_crap[i] = final_TX[i-40];
+        }
+        //printf("index %d: %f, %f\n", i, RX_with_crap[i].real, RX_with_crap[i].imag);
+    }
+
+    //from power spectrum estimation we know k0 is index 40
+    struct complex* corr = calloc(64, sizeof(struct complex));
+    correlation(RX_with_crap, training_one_time_samples, 40, corr);
+
+    for (i = 0; i < 64; i++) {
+        printf("index %d: %f, %f \n", i, corr[i].real, corr[i].imag);
+    }
+    printf("\n\n");
+
+    float avg_corr = 0;
+    corr_avg(corr, &avg_corr);
+
+    printf("%f", avg_corr);
+    printf("\n\n");
+
+    float max_value = 0;
+    int max_index = 0;
+    corr_max(corr, 40, &max_value, &max_index);
+
+    printf("max_value: %f\n", max_value);
+
+    printf("max_index: %d\n", max_index);
+
+    free(RX_with_crap);
+    free(corr);
+    free(training_one_time_samples);
+
+
+
     //Remove CP
+
     #define output_len (final_TX_length * BLOCK_SIZE / BLOCK_WITH_CP)
 
     struct complex* RX_without_CP = calloc(output_len, sizeof(struct complex));
@@ -229,7 +274,6 @@ int main() {
     // }
 
     //training stuff
-
     //after timing acquisition we know training is here
 
     struct complex* Rx_training_one = calloc(64, sizeof(struct complex));
@@ -285,7 +329,6 @@ int main() {
     //OFDM receiver stuff
 
     //Only OFDM RX stuff
-
     #define Rx_data_length (output_len-128)
     struct complex* Rx_data = calloc(Rx_data_length, sizeof(struct complex));
 
@@ -385,6 +428,7 @@ int main() {
     }
     free(RX_demapped_symb);
 
+    //P/S
     struct complex* RX_flat = calloc(modulated_length, sizeof(struct complex));
 
     for (i = 0; i < num_symb; i++) {
@@ -409,13 +453,12 @@ int main() {
     unsigned char* RX_final = calloc(RX_final_length, sizeof(unsigned char));
     bit_detection(RX_flat, RX_final);
 
-
     free(RX_flat);
 
-    for (i = 0; i < 200; i++) {
-        printf("%d, ", RX_final[i]);
-    }
-    printf("\n\n");
+    // for (i = 0; i < 200; i++) {
+    //     printf("%d, ", RX_final[i]);
+    // }
+    // printf("\n\n");
 
 
     //bit error rate

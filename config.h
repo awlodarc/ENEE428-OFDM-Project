@@ -25,7 +25,7 @@
 #define sixteenqam_length 208
 
 // modulation type 1 bpsk, 2 qpsk, 4 16qam
-#define mod_type 4
+#define mod_type 2
 #define modulated_length out_length/mod_type
 
 #endif //CONFIG_H

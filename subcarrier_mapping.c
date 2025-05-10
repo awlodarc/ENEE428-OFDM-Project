@@ -15,5 +15,4 @@ void sub_map(struct complex* input, struct complex* output) {
         output[i-25].real = input[i].real;
         output[i-25].imag = input[i].imag;
     }
-
 }

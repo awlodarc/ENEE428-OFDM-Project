@@ -6,6 +6,7 @@
 #include "operations.h"
 #include "config.h"
 #include <math.h>
+#include <stdlib.h>
 
 struct complex Wfft[FFT_SIZE/2];
 int bitrev[FFT_SIZE];
@@ -40,8 +41,10 @@ void fft(struct complex* fft_freq_samples, struct complex* fft_time_samples){
     int g, s, b, r;
 
     struct complex product;
-    struct complex first[FFT_SIZE];
-    struct complex second[FFT_SIZE];
+    struct complex* first = calloc(FFT_SIZE, sizeof(struct complex));
+    //struct complex first[FFT_SIZE];
+    //struct complex second[FFT_SIZE];
+    struct complex* second = calloc(FFT_SIZE, sizeof(struct complex));
 
     struct complex *current = first;
     struct complex *next = second;
@@ -80,4 +83,6 @@ void fft(struct complex* fft_freq_samples, struct complex* fft_time_samples){
     for(r = 0; r <= FFT_SIZE-1; r++){
         fft_freq_samples[r] = current[r];
     }
+    free(first);
+    free(second);
 }
