@@ -7,6 +7,6 @@
 #include "operations.h"
 #include "stdbool.h"
 
-bool signal_detected(struct complex* r);
+bool signal_detected(struct complex* r, int* signal_start_index);
 
 #endif //SIGNAL_POWER_ESTIMATION_H

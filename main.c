@@ -219,21 +219,23 @@ int main() {
 
     //          Receiver        //
 
-    struct complex* RX_with_crap = calloc(final_TX_length+40, sizeof(struct complex));
+#define crap 68
 
-    for (i = 0; i < final_TX_length+40; i++) {
-        if (i >= 0 && i < 40){
+    struct complex* RX_with_crap = calloc(final_TX_length+crap, sizeof(struct complex));
+
+    for (i = 0; i < final_TX_length+crap; i++) {
+        if (i >= 0 && i < crap){
             RX_with_crap[i].real = (float)i;
             RX_with_crap[i].imag = 0;
         } else {
-            RX_with_crap[i] = final_TX[i-40];
+            RX_with_crap[i] = final_TX[i-crap];
         }
         //printf("index %d: %f, %f\n", i, RX_with_crap[i].real, RX_with_crap[i].imag);
     }
 
-    //from power spectrum estimation we know k0 is index 40
+    //from power spectrum estimation we know k0 is index crap
     struct complex* corr = calloc(64, sizeof(struct complex));
-    correlation(RX_with_crap, training_one_time_samples, 40, corr);
+    correlation(RX_with_crap, training_one_time_samples, crap, corr);
 
     for (i = 0; i < 64; i++) {
         printf("index %d: %f, %f \n", i, corr[i].real, corr[i].imag);
@@ -248,7 +250,7 @@ int main() {
 
     float max_value = 0;
     int max_index = 0;
-    corr_max(corr, 40, &max_value, &max_index);
+    corr_max(corr, crap, &max_value, &max_index);
 
     printf("max_value: %f\n", max_value);
 
