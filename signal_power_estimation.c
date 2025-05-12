@@ -35,9 +35,15 @@
 
 bool signal_detected(struct complex* r, int* signal_start_index) {
     static double p_avg = 0;
+    static int startup_frames = 10;  // Wait for 10 buffers to stabilize
     double alpha = 0.95;
     double gamma_p = 0.0004;
     int n;
+
+    if (startup_frames > 0) {
+        startup_frames--;
+        return false;  // skip detection during warm-up
+    }
 
     for (n = 0; n < CHUNK_SIZE; n++) {
         double real = r[n].real;
