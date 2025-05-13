@@ -1,0 +1,260 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <dsk6713.h>
+#include <dsk6713_aic23.h>
+#include <DSKintr.h>
+#include <intr.h>
+#include <stdint.h>
+
+#include "config.h"
+#include "generate_sequence.h"
+#include "operations.h"
+#include "symbol_modulation.h"
+#include "subcarrier_mapping.h"
+#include "FFT.h"
+#include "IFFT.h"
+#include "Add_CP.h"
+#include "bit_detection.h"
+#include "Remove_CP.h"
+#include "channel_estimator.h"
+#include "equalizer.h"
+#include "Remove_CP.h"
+#include "subcarrier_demapping.h"
+
+DSK6713_AIC23_Config config = { \
+    0x0017,  /* 0 DSK6713_AIC23_LEFTINVOL  Left line input channel volume */ \
+    0x0017,  /* 1 DSK6713_AIC23_RIGHTINVOL Right line input channel volume */\
+    0x00d8,  /* 2 DSK6713_AIC23_LEFTHPVOL  Left channel headphone volume */  \
+    0x00d8,  /* 3 DSK6713_AIC23_RIGHTHPVOL Right channel headphone volume */ \
+    0x0011,  /* 4 DSK6713_AIC23_ANAPATH    Analog audio path control */      \
+    0x0000,  /* 5 DSK6713_AIC23_DIGPATH    Digital audio path control */     \
+    0x0000,  /* 6 DSK6713_AIC23_POWERDOWN  Power down control */             \
+    0x0043,  /* 7 DSK6713_AIC23_DIGIF      Digital audio interface format */ \
+    0x0081,  /* 8 DSK6713_AIC23_SAMPLERATE Sample rate control (48 kHz) */   \
+    0x0001   /* 9 DSK6713_AIC23_DIGACT     Digital interface activation */   \
+};
+
+Uint32 pack_dac_channels(float left, float right, float scale){
+	Uint32 sample_pair;
+	int16_t left_int = left*scale;
+	int16_t right_int = right*scale;
+	sample_pair = (int16_t)left_int << 16;
+	sample_pair = sample_pair | ((int16_t)right_int & 0x0000ffff);
+
+	return sample_pair;
+}
+
+void unpack_adc_channels(Uint32 sample_pair, float* left, float* right, float scale)
+{
+	int16_t sample_left = (sample_pair >> 16) & 0xFFFF;
+	int16_t sample_right = (int16_t)(sample_pair & 0xffff);
+
+	*left = (float)sample_left/scale;
+	*right = (float)sample_right/scale;
+}
+
+void main() {
+    revOrder();
+    twiddleFactorsFFT();
+
+    //          Transmitter        //
+
+    //training sub-carriers
+    struct complex training[52] = {{1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}};
+
+    // S/P for training
+    struct complex* mapped_training_one = calloc(64, sizeof(struct complex));
+    struct complex* mapped_training_two = calloc(64, sizeof(struct complex));
+
+    sub_map(training, mapped_training_one);
+    sub_map(training, mapped_training_two);
+
+    //ifft for training
+    struct complex* training_one_time_samples = malloc(FFT_SIZE * sizeof(struct complex));
+    struct complex* training_two_time_samples = malloc(FFT_SIZE * sizeof(struct complex));
+
+    ifft(training_one_time_samples, mapped_training_one);
+    ifft(training_two_time_samples, mapped_training_two);
+
+    //freeing allocated memory
+    free(mapped_training_one);
+    free(mapped_training_two);
+
+    //flatten training
+    #define training_length 128
+    struct complex* flat_training = malloc(training_length * sizeof(struct complex));
+    int i, j;
+    for (i = 0; i < 64; i++) {
+        flat_training[i] = training_one_time_samples[i];         // Copy first array
+        flat_training[i + 64] = training_two_time_samples[i];    // Copy second array, offset by 64
+    }
+
+    free(training_one_time_samples);
+    free(training_two_time_samples);
+
+    //Add CP training
+    #define num_blocks (training_length / BLOCK_SIZE)
+    #define final_train_length (num_blocks * BLOCK_WITH_CP)
+
+    struct complex* final_training = malloc(final_train_length * sizeof(struct complex));
+
+    Add_CP(final_training, flat_training, training_length);
+
+    free(flat_training);
+
+
+    //		OFDM generation		//
+
+    const unsigned char* seq = get_lfsr_sequence();
+
+    //Modulation api
+    struct complex* modulated = malloc(modulated_length * sizeof(struct complex));
+    modulate(seq, modulated);
+
+    //S/P
+    #define sub_size 52
+    #define num_symb (modulated_length / sub_size + (modulated_length % sub_size != 0))
+
+    struct complex** symbols = malloc(num_symb * sizeof(struct complex*));
+    for (i = 0; i < num_symb; i++) {
+        symbols[i] = calloc(sub_size, sizeof(struct complex));
+    }
+
+    for (i = 0; i < num_symb; i++) {
+        for (j = 0; j < sub_size; j++) {
+            int index = i * sub_size + j;
+            if (index < modulated_length) {
+                symbols[i][j] = modulated[index];
+            } else {
+                symbols[i][j].real = 0;
+                symbols[i][j].imag = 0;
+            }
+        }
+    }
+
+    //sub carrier mapping
+    struct complex* mapped = calloc(64, sizeof(struct complex));
+    struct complex** mapped_symb = malloc(num_symb * sizeof(struct complex*));
+    for (i = 0; i < num_symb; i++) {
+        mapped_symb[i] = calloc(64, sizeof(struct complex));
+    }
+
+    for (i = 0; i < num_symb; i++) {
+        sub_map(symbols[i], mapped);  // Pass 52 elements
+        for (j = 0; j < 64; j++) {
+            mapped_symb[i][j] = mapped[j];
+        }
+    }
+
+    for (i = 0; i < num_symb; i++) {
+        free(symbols[i]);
+    }
+    free(symbols);
+
+    //ifft
+    struct complex* ifft_time_samples = malloc(FFT_SIZE * sizeof(struct complex));
+
+    struct complex** ifft_chunks = malloc(num_symb * sizeof(struct complex*));
+    for (i = 0; i < num_symb; i++) {
+        ifft_chunks[i] = calloc(64, sizeof(struct complex));
+    }
+
+    for (i = 0; i < num_symb; i++) {
+        ifft(ifft_time_samples, mapped_symb[i]);
+        for (j = 0; j < 64; j++) {
+            ifft_chunks[i][j] = ifft_time_samples[j];
+        }
+    }
+
+    for (i = 0; i < num_symb; i++) {
+        free(mapped_symb[i]);
+    }
+    free(mapped_symb);
+
+
+    // P/S
+    #define symbols_length (num_symb * 64)
+    struct complex* flattened = malloc(symbols_length * sizeof(struct complex));
+
+    for (i = 0; i < num_symb; i++) {
+        for (j = 0; j < 64; j++) {
+            flattened[i * 64 + j] = ifft_chunks[i][j];
+        }
+    }
+
+    for (i = 0; i < num_symb; i++) {
+        free(ifft_chunks[i]);
+    }
+    free(ifft_chunks);
+
+    //Add CP stuff
+    #define symbols_num_blocks (symbols_length / BLOCK_SIZE)
+    #define final_symbols_length (symbols_num_blocks * BLOCK_WITH_CP)
+
+    struct complex* final_symbols = malloc(final_symbols_length * sizeof(struct complex));
+
+    Add_CP(final_symbols, flattened, symbols_length);
+
+    free(flattened);
+
+
+    //combine training and OFDM symbols
+    #define final_TX_length (final_train_length + final_symbols_length)
+    struct complex* final_TX = malloc(final_TX_length * sizeof(struct complex));
+
+    for (i = 0; i < final_train_length; i++) {
+        final_TX[i].real = final_training[i].real;
+        final_TX[i].imag = final_training[i].imag;
+    }
+    for (i = 0; i < final_symbols_length; i++) {
+        final_TX[i+final_train_length].real = final_symbols[i].real;
+        final_TX[i+final_train_length].imag = final_symbols[i].imag;
+    }
+
+	//packing left and right channels with final transmitted signal
+	DSK6713_AIC23_CodecHandle hCodec;
+	Uint32 sample_pair = 0;
+
+	/* Initialize the interrupt system */
+	intr_reset();
+
+	/* dsk6713_init() must be called before other BSL functions */
+	DSK6713_init(); /* In the BSL library */
+
+	/* Start the codec */
+	hCodec = DSK6713_AIC23_openCodec(0, &config);
+
+	/* Change the sampling rate to 16 kHz */
+	DSK6713_AIC23_setFreq(hCodec, DSK6713_AIC23_FREQ_16KHZ);
+
+	float scaler = 30000;
+	i = 0;
+	for(i = 0; i < final_train_length + final_symbols_length; i++){
+		float left_out = final_TX[i].real;
+		float right_out = final_TX[i].imag;
+
+		sample_pair = pack_dac_channels(left_out, right_out, scaler);
+		while(!DSK6713_AIC23_write(hCodec, sample_pair));
+
+	}
+
+//Infinite loop for testing TX data
+//
+//	for(;;){
+//		float left_out = final_TX[i].real;
+//		float right_out = final_TX[i].imag;
+//
+//		sample_pair = pack_dac_channels(left_out, right_out, scaler);
+//		while(!DSK6713_AIC23_write(hCodec, sample_pair));
+//
+//		if(i>=final_train_length + final_symbols_length){
+//			i = 0;
+//		}
+//
+//		i++;
+//	}
+
+}
+
+

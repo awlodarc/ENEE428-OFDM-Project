@@ -1,0 +1,258 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <dsk6713.h>
+#include <dsk6713_aic23.h>
+#include <DSKintr.h>
+#include <intr.h>
+#include <stdint.h>
+#include <stdbool.h>
+
+#include "config.h"
+#include "generate_sequence.h"
+#include "operations.h"
+#include "symbol_modulation.h"
+#include "subcarrier_mapping.h"
+#include "FFT.h"
+#include "IFFT.h"
+#include "Add_CP.h"
+#include "bit_detection.h"
+#include "Remove_CP.h"
+#include "channel_estimator.h"
+#include "equalizer.h"
+#include "Remove_CP.h"
+#include "subcarrier_demapping.h"
+#include "signal_power_estimation.h"
+#include "timing_acquisition.h"
+
+DSK6713_AIC23_Config config = { \
+    0x0017,  /* 0 DSK6713_AIC23_LEFTINVOL  Left line input channel volume */ \
+    0x0017,  /* 1 DSK6713_AIC23_RIGHTINVOL Right line input channel volume */\
+    0x00d8,  /* 2 DSK6713_AIC23_LEFTHPVOL  Left channel headphone volume */  \
+    0x00d8,  /* 3 DSK6713_AIC23_RIGHTHPVOL Right channel headphone volume */ \
+    0x0011,  /* 4 DSK6713_AIC23_ANAPATH    Analog audio path control */      \
+    0x0000,  /* 5 DSK6713_AIC23_DIGPATH    Digital audio path control */     \
+    0x0000,  /* 6 DSK6713_AIC23_POWERDOWN  Power down control */             \
+    0x0043,  /* 7 DSK6713_AIC23_DIGIF      Digital audio interface format */ \
+    0x0081,  /* 8 DSK6713_AIC23_SAMPLERATE Sample rate control (48 kHz) */   \
+    0x0001   /* 9 DSK6713_AIC23_DIGACT     Digital interface activation */   \
+};
+
+Uint32 pack_dac_channels(double left, double right, double scale){
+	Uint32 sample_pair;
+	int16_t left_int = left*scale;
+	int16_t right_int = right*scale;
+	sample_pair = (int16_t)left_int << 16;
+	sample_pair = sample_pair | ((int16_t)right_int & 0x0000ffff);
+	return sample_pair;
+}
+
+void unpack_adc_channels(Uint32 sample_pair, double* left, double* right, double scale)
+{
+	int16_t sample_left = sample_pair >> 16;
+	int16_t sample_right = sample_pair & 0xffff;
+
+	*left = (double)sample_left/scale;
+	*right = (double)sample_right/scale;
+}
+
+//isr stuff
+struct complex ping[CHUNK_SIZE];
+struct complex pong[CHUNK_SIZE];
+
+struct complex *current = ping;
+struct complex *next = pong;
+
+volatile int index = 0;
+volatile int bufferReady = 0;
+
+interrupt void isr(){
+	//Read in every samping sent from the transmitter using interupts
+	Uint32 sample_pair = MCBSP_read(DSK6713_AIC23_DATAHANDLE);
+	double left;
+	double right;
+	unpack_adc_channels(sample_pair, &left, &right, 30000);
+
+	struct complex new_sample;
+	new_sample.real = left;
+	new_sample.imag = right;
+
+	sample_pair = pack_dac_channels(left, right, 30000);
+
+	MCBSP_write(DSK6713_AIC23_DATAHANDLE, sample_pair);
+
+	next[index] = new_sample;
+
+	index++;
+
+	//Use filled array for operations while filling the other
+	if(index > CHUNK_SIZE){
+		struct complex* temp = next;
+		next = current;
+		current = temp;
+		index = 0;
+		bufferReady = 1;
+	}
+}
+
+void main(void) {
+    revOrder();
+    twiddleFactorsFFT();
+	DSK6713_AIC23_CodecHandle hCodec;
+	//Uint32 sample_pair = 0;
+
+	/* Initialize the interrupt system */
+	intr_reset();
+
+	/* dsk6713_init() must be called before other BSL functions */
+	DSK6713_init(); /* In the BSL library */
+
+	/* Start the codec */
+	hCodec = DSK6713_AIC23_openCodec(0, &config);
+
+	/* Change the sampling rate to 16 kHz */
+	DSK6713_AIC23_setFreq(hCodec, DSK6713_AIC23_FREQ_16KHZ);
+
+	//interrupt handler setup
+	//interrupt multiplexer map
+	intr_map(CPU_INT14, ISN_RINT1);
+
+	//address of your interrupt service routine into the Interrupt Service Table
+	intr_hook(isr, CPU_INT14);
+
+	//Clearing an interrupt flag in the IFR
+	INTR_CLR_FLAG(CPU_INT14);
+
+	//initialize interrupt NMI
+	INTR_ENABLE(CPU_INT_NMI);
+
+	//initialize interrupt 14 and 15
+	INTR_ENABLE(CPU_INT14);
+
+	//initialize global interrupt
+	INTR_GLOBAL_ENABLE();
+
+	int i;
+
+
+	//training sub-carriers
+	struct complex training[52] = {{1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {1, 0}, {-1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {-1, 0}, {1, 0}, {1, 0}, {1, 0}, {1, 0}};
+
+	// S/P for training
+	struct complex* mapped_training_one = calloc(64, sizeof(struct complex));
+
+	sub_map(training, mapped_training_one);
+
+	//ifft for training
+	struct complex* training_one_time_samples = calloc(FFT_SIZE, sizeof(struct complex));
+
+	ifft(training_one_time_samples, mapped_training_one);
+
+    free(mapped_training_one);
+
+	int signal_start_index = -1;
+
+	struct complex analysis_buffer[CHUNK_SIZE];
+
+
+	for(;;){
+		while(bufferReady == 0);
+		bufferReady = 0;
+
+		//Signal power estimation
+		if(signal_detected(current, &signal_start_index)) {
+			for (i = 0; i < CHUNK_SIZE; i++){
+				analysis_buffer[i] = current[i];
+			}
+
+			printf("Signal detected");
+			break;
+		}
+	}
+
+	//Timing acquisition
+	struct complex* corr = calloc(64, sizeof(struct complex));
+	correlation(analysis_buffer, training_one_time_samples, signal_start_index, corr);
+
+	float avg_corr = 0;
+	corr_avg(corr, &avg_corr);
+
+	float max_value = 0;
+	int max_index = 0;
+	corr_max(corr, signal_start_index, &max_value, &max_index);
+
+	printf("start_index: %d\n", signal_start_index);
+
+	printf("max_index: %d\n", max_index);
+
+	free(corr);
+	free(training_one_time_samples);
+
+    struct complex* rx_signal = calloc(240, sizeof(struct complex));
+
+    for (i = 0; i < final_TX_length; i++){
+    	rx_signal[i].real = analysis_buffer[i+signal_start_index].real;
+    	rx_signal[i].imag = analysis_buffer[i+signal_start_index].imag;
+    }
+
+
+    //Remove CP
+    struct complex* RX_without_CP = calloc(output_len, sizeof(struct complex));
+    Remove_CP(RX_without_CP, rx_signal, final_TX_length);
+
+    free(rx_signal);
+
+
+    //training stuff
+    //after timing acquisition we know training is here
+    struct complex* Rx_training_one = calloc(64, sizeof(struct complex));
+    struct complex* Rx_training_two = calloc(64, sizeof(struct complex));
+
+    for (i = 0; i < 64; i++) {
+        Rx_training_one[i] = RX_without_CP[i];
+        Rx_training_two[i] = RX_without_CP[i+64];
+    }
+
+    //fft for RX training
+    struct complex* Rx_fft_training_one = calloc(64, sizeof(struct complex));
+    struct complex* Rx_fft_training_two = calloc(64, sizeof(struct complex));
+
+    fft(Rx_fft_training_one, Rx_training_one);
+    fft(Rx_fft_training_two, Rx_training_two);
+
+    free(Rx_training_one);
+    free(Rx_training_two);
+
+    //sub-carrier de mapping
+    struct complex* Rx_fft_training_one_demapped = calloc(52, sizeof(struct complex));
+    struct complex* Rx_fft_training_two_demapped = calloc(52, sizeof(struct complex));
+
+    sub_de_map(Rx_fft_training_one, Rx_fft_training_one_demapped);
+    sub_de_map(Rx_fft_training_two, Rx_fft_training_two_demapped);
+
+    free(Rx_fft_training_one);
+    free(Rx_fft_training_two);
+
+    //channel estimation
+    struct complex* H1 = calloc(52, sizeof(struct complex));
+    struct complex* H2 = calloc(52, sizeof(struct complex));
+
+    for (i = 0; i < 52; i++) {
+        H1[i] = cmultiply(Rx_fft_training_one_demapped[i], training[i]);
+        H2[i] = cmultiply(Rx_fft_training_two_demapped[i], training[i]);
+    }
+
+    free(Rx_fft_training_one_demapped);
+    free(Rx_fft_training_two_demapped);
+
+    struct complex* H_est = calloc(52, sizeof(struct complex));
+    estimation(H1, H2, H_est);
+
+    free(H1);
+    free(H2);
+
+    for (i = 0; i < 52; i++) {
+    	printf("real %f, imag %f \n", H_est[i].real, H_est[i].imag);
+    }
+
+}
