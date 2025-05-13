@@ -28,4 +28,6 @@
 #define mod_type 2
 #define modulated_length out_length/mod_type
 
+#define CHUNK_SIZE 1024
+
 #endif //CONFIG_H
