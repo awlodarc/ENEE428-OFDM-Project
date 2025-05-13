@@ -23,6 +23,4 @@ void ifft(struct complex* output, struct complex* input) {
         output[i].real = temp_out[i].real / FFT_SIZE;
         output[i].imag = -temp_out[i].imag / FFT_SIZE;
     }
-
 }
-

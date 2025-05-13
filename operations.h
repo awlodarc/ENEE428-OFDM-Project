@@ -7,8 +7,8 @@
 
 // Complex number structure
 struct complex{
-    double real;
-    double imag;
+    float real;
+    float imag;
 };
 
 // Complex operations (returning struct by value)
