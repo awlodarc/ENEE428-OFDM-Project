@@ -7,9 +7,9 @@
 #include "operations.h"
 #include "stdbool.h"
 
-void correlation(struct complex* r, struct complex* s, int ko, struct complex* convolution);
-double corr_avg(struct complex* convolution, int ko);
-void corr_max(struct complex* convolution, double* max_value, int* max_index);
+void correlation(struct complex* r, struct complex* s, int k0, struct complex* corr);
+void corr_avg(struct complex* corr, float* corr_avg);
+void corr_max(struct complex* corr, int k0, float* max_value, int* max_index);
 bool corr_peak_detection(double* max_value, int* max_index, double c_avg);
 
 #endif //TIMING_ACQUISITION_H

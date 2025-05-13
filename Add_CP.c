@@ -12,7 +12,6 @@ void Add_CP(struct complex* output, struct complex* input, int input_len) {
 
     for (int i = 0; i < num_blocks; i++) {
         int in_start = i * BLOCK_SIZE;
-        int in_end = in_start + BLOCK_SIZE;
         int cp_start = in_start + BLOCK_SIZE - CP_LEN;
         int out_start = i * BLOCK_WITH_CP;
 
